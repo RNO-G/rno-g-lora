@@ -1,0 +1,74 @@
+How to setup chirpstack:
+  (centos 8 or Fedora. need epel for el8) 
+
+yum install redis postgresql-server postgresql-contrib mosquitto
+postgresql-setup 
+
+check for newest versions: 
+
+sudo yum install https://artifacts.chirpstack.io/downloads/chirpstack-gateway-bridge/chirpstack-gateway-bridge_3.9.2_linux_amd64.rpm  
+sudo yum install https://artifacts.chirpstack.io/downloads/chirpstack-network-server/chirpstack-network-server-bridge_3.11.0_linux_amd64.rpm  
+sudo yum install https://artifacts.chirpstack.io/downloads/chirpstack-application-server/chirpstack-application-server_3.12.2_linux_amd64.rpm
+
+#setup databases with socket auth. Note that this is based on  the username that the current version of those rpms run each daemon, so may change! 
+
+sudo -u postgres psql 
+
+create role appserver with LOGIN;
+create role networkserver with LOGIN;
+create database chirpstack_as with owner appserver;     
+create database chirpstack_ns with owner networkserver;     
+\c chirpstack_as
+create extension pg_trgm; 
+create extension pg_hstore; 
+
+#setup config files 
+
+/etc/chirpstack-gateway-bridge/chirpstack-gateway-bridge.toml: 
+
+  Maybe change  marhsaller from protobuf to json? Not sure yet. 
+
+
+/etc/chirpstack-network-server/chirpstack-network-server.toml: 
+
+for database: 
+dsn="user=networkserver dbname=chirpstack_ns sslmode=disable host=/var/run/postgresql" 
+
+for band plan: 
+ [network_server.band]  
+ name="US_902_928"   
+
+#TODO figure out the right channels
+
+ [network_server.network_settings] 
+ enabled_uplink_channels=[0, 1, 2, 3, 4, 5, 6, 7, 64]   
+
+
+
+/etc/chirpstack-network-server/chirpstack-network-server.toml: 
+for database: 
+dsn="user=appserver dbname=chirpstack_as sslmode=disable host=/var/run/postgresql"  
+
+Set a jwt_sceret! 
+
+
+# then you can start all the daemons with systemctl 
+# you also want to enable them if you want them to run automatically on reboot 
+# you can use enable --now to do both. 
+
+sudo systemctl start redis
+sudo systemctl start postgresql 
+sudo systemctl start chirpstack-gateway-bridge
+sudo systemctl start chirpstack-network-server
+sudo systemctl start chirpstack-application-server
+sudo systemctl start mosquitto 
+
+
+
+# then there's a lot to configure.... for devices, etc. 
+
+
+-Add the gateway
+-Create a network
+- Create an "application"
+-add device class 
