@@ -25,7 +25,7 @@ if len(sys.argv) < 3:
 
 
 device = int(sys.argv[1])
-table = { 'normal':b'x\x01', 'lte-off':b'\x02', 'sbc-off':b'\x03' } 
+table = { 'normal':b'\x01', 'lte-off':b'\x02', 'sbc-off':b'\x03' } 
 
 val = table[sys.argv[2]]
 
