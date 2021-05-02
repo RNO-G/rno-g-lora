@@ -57,7 +57,7 @@ int main(int nargs, char ** args)
   }
 
   PGresult * res = PQprepare(db,"lte_stmt",
-      "SELECT msg_id, source_id,source_name, rcv_time, fcnt, freq, rssi, msg_payload from inbox WHERE msg_type == 2 ORDER BY msg_id DESC LIMIT 50;" ,0,0); 
+      "SELECT msg_id, source_id,source_name, rcv_time, fcnt, freq, rssi, msg_payload from inbox WHERE msg_type = 2 ORDER BY msg_id DESC LIMIT 50;" ,0,0); 
 
   if (PQresultStatus(res) != PGRES_COMMAND_OK) 
   {
@@ -67,7 +67,7 @@ int main(int nargs, char ** args)
 
   PQclear(res); 
   res = PQprepare(db,"report_stmt",
-      "SELECT msg_id, source_id,source_name, rcv_time, fcnt, freq, rssi, msg_payload from inbox WHERE msg_type == 1 ORDER BY msg_id DESC LIMIT 50;" ,0,0); 
+      "SELECT msg_id, source_id,source_name, rcv_time, fcnt, freq, rssi, msg_payload from inbox WHERE msg_type = 1 ORDER BY msg_id DESC LIMIT 50;" ,0,0); 
 
   if (PQresultStatus(res) != PGRES_COMMAND_OK) 
   {
