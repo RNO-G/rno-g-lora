@@ -1,7 +1,7 @@
 #! /usr/bin/env python3 
 
 
-APPLICATION_ID=1
+APPLICATION_ID=2
 PREFIX="c01daf" 
 FORMAT="%010x" 
 CONFIRMED= "true"
@@ -12,8 +12,6 @@ import base64
 import sys 
 
 
-device = 960 
-devstring = PREFIX + (FORMAT % (device)) 
 
 payload="" 
 
@@ -25,12 +23,11 @@ if len(sys.argv) < 3:
 
 
 device = int(sys.argv[1])
+devstring = PREFIX + (FORMAT % (device)) 
 table = { 'normal':b'\x01', 'lte-off':b'\x02', 'sbc-off':b'\x03' } 
 
 val = table[sys.argv[2]]
-
-with open(infile,"rb") as f: 
-  payload = base64.b64encode(val).decode()
+payload = base64.b64encode(val).decode()
 
 msg = (
     "{" 
