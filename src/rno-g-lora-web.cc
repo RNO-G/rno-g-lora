@@ -13,7 +13,7 @@ std::string make_table(PGresult * r)
     int nrows = PQntuples(r); 
     int ncols = PQnfields(r);
 
-    std::string ret = "<table>\n\t<tr>\n"; 
+    std::string ret = "<table border=1>\n\t<tr>\n"; 
 
     for (int j = 0; j < ncols; j++) 
     {
@@ -81,7 +81,7 @@ int main(int nargs, char ** args)
 
   CROW_ROUTE(app,"/")( []()
   {
-    return "<html><head><title>LORA</title></head><body><h1>LORA Monitoring</h1><p> <a href='/report'>report</a> | <a href='/lte'>LTE </a><</body></html>"; 
+    return "<html><head><title>LORA</title></head><body><h1>LORA Monitoring</h1><p> <a href='/report'>report</a> | <a href='/lte'>LTE </a></body></html>"; 
   }); 
 
   CROW_ROUTE(app,"/lte")( []() 
@@ -94,6 +94,7 @@ int main(int nargs, char ** args)
 
     std::string ret = "<html>\n<head>\n<title>LTE</title></head><body><h1>LTE</h1>\n<hr>\n"; 
     ret += make_table(r); 
+    ret += "\n</body></html>"; 
     PQclear(r); 
     return ret; 
   }); 
@@ -108,6 +109,7 @@ int main(int nargs, char ** args)
 
     std::string ret = "<html>\n<head>\n<title>REPORT</title></head><body><h1>REPORTS</h1>\n<hr>\n"; 
     ret += make_table(r); 
+    ret += "\n</body></html>"; 
     PQclear(r); 
     return ret; 
   }); 
