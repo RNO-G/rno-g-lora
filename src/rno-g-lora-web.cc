@@ -81,7 +81,7 @@ int main(int nargs, char ** args)
   PQclear(res); 
 
   res = PQprepare(db,"station_stmt",
-      "SELECT msg_id, msg_type, rcv_time, fcnt, freq, rssi, msg_payload from inbox WHERE souce_id = $1::integer ORDER BY msg_id DESC LIMIT 50;" ,0,0); 
+      "SELECT msg_id, msg_type, rcv_time, fcnt, freq, rssi, msg_payload from inbox WHERE source_id = $1::integer ORDER BY msg_id DESC LIMIT 50;" ,0,0); 
 
   if (PQresultStatus(res) != PGRES_COMMAND_OK) 
   {
