@@ -27,7 +27,6 @@ const char * host = "localhost";
 int keep_alive = 60; 
 bool clean_sesh = true; 
 bool debug_out = false; 
-const char * pg_conn_info = "dbname=rno_g_lora"; 
 const char * insert_stmt_name = "insert_json_payload"; 
 const char * insert_stmt = 
                    "INSERT INTO inbox (source_id,source_name, msg_type, rcv_time, fcnt, freq, rssi, confirmed, msg_raw, msg_payload) "

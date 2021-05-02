@@ -7,8 +7,9 @@
 #include <ctime> 
 
 
-
-const char * pg_conn_info = "dbname=rno_g_lora"; 
+int stations[] = ENABLED_STATIONS; 
+int n_stations = sizeof(stations)/sizeof(*stations); 
+int daqboxes[] = ENABLED_DAQBOXES; 
 
 
 std::string current_time() 
@@ -106,13 +107,19 @@ int main(int nargs, char ** args)
 
   CROW_ROUTE(app,"/")( []()
   {
-    std::string ret =  "<html><head><title>LORA</title></head><body><h1>LORA Monitoring</h1><p> <a href='/report'>report</a> | <a href='/lte'>LTE </a><p>\n";
-    int stations[] = ENABLED_STATIONS; 
+    std::string ret =  "<html><head><title>LORA</title></head><body><h1>LORA Monitoring</h1><p> <a href='/report'>report</a> | <a href='/lte'>LTE </a><p>By Station: \n";
     for (int station : stations) 
     {
      ret += "| <a href='/station/" + std::to_string(station)+"'>" + std::to_string(station) + "</a> |\n"; 
     }
- 
+
+    ret +="<p> By DAQBox: "; 
+     for (int daqbox : daqboxes) 
+    {
+     ret += "| <a href='/station/" + std::to_string(get_station_from_daqbox(daqbox))+"'>" + std::to_string(daqbox) + "</a> |\n"; 
+    }
+
+
     ret += "<p> <a href='https://github.com/rno-g/rno-g-lora'>you can help make this less crappy</a></body></html>"; 
     return ret; 
   }); 
@@ -166,7 +173,7 @@ int main(int nargs, char ** args)
     std::string ret = "<html>\n<head>\n<title>STATION "; 
     ret += std::to_string(station); 
     ret +=" </title></head><body><h1> STATION ";
-    ret += std::to_string(station) + " (" + get_name(station) + ")"; 
+    ret += std::to_string(station) + " (" + get_name(station) + ", DAQBox " + std::to_string(get_daqbox_from_station(station)) + ")"; 
     ret += "</h1><p><a href='/'>[back]</a>\n<hr>\n"; 
     ret += "<p>" + current_time(); 
     ret += make_table(r); 
