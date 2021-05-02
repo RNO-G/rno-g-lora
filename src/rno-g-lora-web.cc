@@ -4,11 +4,22 @@
 #include "libpq-fe.h" 
 #include <arpa/inet.h> 
 #include "rno-g-lora-common.h"
+#include <ctime> 
 
 
 
 const char * pg_conn_info = "dbname=rno_g_lora"; 
 
+
+std::string current_time() 
+{
+  time_t now; 
+  time(&now) ; 
+  std::string ret = "current time: " ; 
+  char buf[32]; 
+  ret += ctime_r(&now,buf); 
+  return ret; 
+}
 
 std::string make_table(PGresult * r) 
 {
@@ -115,6 +126,7 @@ int main(int nargs, char ** args)
     }
 
     std::string ret = "<html>\n<head>\n<title>LTE</title></head><body><h1>LTE STATS</h1><p><a href='/'>[back]</a>\n<hr>\n"; 
+    ret += "<p>" + current_time(); 
     ret += make_table(r); 
     ret += "\n</body></html>"; 
     PQclear(r); 
@@ -130,6 +142,7 @@ int main(int nargs, char ** args)
     }
 
     std::string ret = "<html>\n<head>\n<title>REPORT</title></head><body><h1>STATION REPORTS</h1><p><a href='/'>[back]</a>\n<hr>\n"; 
+    ret += "<p>" + current_time(); 
     ret += make_table(r); 
     ret += "\n</body></html>"; 
     PQclear(r); 
@@ -155,6 +168,7 @@ int main(int nargs, char ** args)
     ret +=" </title></head><body><h1> STATION ";
     ret += std::to_string(station) + " (" + get_name(station) + ")"; 
     ret += "</h1><p><a href='/'>[back]</a>\n<hr>\n"; 
+    ret += "<p>" + current_time(); 
     ret += make_table(r); 
     ret += "\n</body></html>"; 
     PQclear(r); 
