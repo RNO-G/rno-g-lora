@@ -176,7 +176,7 @@ int main(int nargs, char ** args)
   }); 
 
 
-  app.port(1777).multithreaded().run(); 
+  app.port(1777).run(); 
 
   PQfinish(db); 
 
