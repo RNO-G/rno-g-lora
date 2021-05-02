@@ -234,7 +234,7 @@ void message_received(mosquitto * , void * , const mosquitto_message *msg)
       {
           std::cout << std::hex << std::setfill('0') << std::setw(2) << (int) devEUI[i]; 
       }
-      std::cout << std::dec<< " / " << station <<  "), port:" << port << " , count: " << count << "freq: " << freq  << "rssi: " << rssi << " dB " << std::endl; 
+      std::cout << std::dec<< " / " << station <<  "), port:" << port << ", count: " << count << ", freq: " << freq  << ", rssi: " << rssi << " dB"  << std::endl; 
     }
 
     boost::json::object payload_json; 
