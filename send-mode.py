@@ -18,13 +18,13 @@ payload=""
 infile = "/dev/stdin"  
 
 if len(sys.argv) < 3: 
-    print("./send_mode.py device modestring=['normal','lte-off','sbc-off']") 
+    print("./send_mode.py device modestring=['normal','lte-off','sbc-off','low-power']") 
     sys.exit(1) 
 
 
 device = int(sys.argv[1])
 devstring = PREFIX + (FORMAT % (device)) 
-table = { 'normal':b'\x01', 'lte-off':b'\x02', 'sbc-off':b'\x03' } 
+table = { 'normal':b'\x01', 'lte-off':b'\x02', 'sbc-off':b'\x03', 'low-power':b'\x04' } 
 
 val = table[sys.argv[2]]
 payload = base64.b64encode(val).decode()
