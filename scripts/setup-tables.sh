@@ -15,6 +15,7 @@ DROP TABLE if exists outbox;
 CREATE TABLE inbox ( 
 msg_id SERIAL PRIMARY KEY, 
 source_id  integer not null, 
+daqbox  integer not null, 
 source_name  char(15) not null, 
 msg_type  integer not null, 
 rcv_time  timestamp not null, 
