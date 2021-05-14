@@ -246,7 +246,7 @@ void message_received(mosquitto * , void * , const mosquitto_message *msg)
    dbvals[10] = payload_as_str.c_str(); 
 
    //Insert into our database
-   PGresult * res = PQexecPrepared(db, insert_stmt_name, 10,  dbvals, lens,binary,0); 
+   PGresult * res = PQexecPrepared(db, insert_stmt_name, 11,  dbvals, lens,binary,0); 
    if (PQresultStatus(res) != PGRES_COMMAND_OK) 
    {
       std::cerr << "exec failed " << PQresultStatus(res) << ": " << PQresultErrorMessage(res) << std::endl << PQerrorMessage(db) << std::endl; 
