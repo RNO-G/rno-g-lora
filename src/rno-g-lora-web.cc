@@ -135,9 +135,9 @@ int main(int nargs, char ** args)
   {
     char hostname[512]; 
     gethostname(hostname,511); 
-    std::string ret =  "<html><head><title>LORA</title></head><body><h1>LORA Monitoring</h1><p>See also <a href='/' onclick='javascript:event.target.port=3000'>grafana</a>.<p> <a href='/report'>All Station Reports</a> | <a href='/lte'>All LTE Stats </a> | <a href='/lora'>All LORA Stats</a> <hr>\n"; 
-    ret+="<table><tr><<td>By Station:</td> \n";
-    std::vector<double> last_heard(n_stations); 
+    std::string ret =  "<html><head><title>LORA</title></head><body><h1>LORA Monitoring</h1><p>See also <a href='https://rno-g.uchicago.edu:3000'>grafana</a>.<p> <a href='/report'>All Station Reports</a> | <a href='/lte'>All LTE Stats </a> | <a href='/lora'>All LORA Stats</a> <hr>\n"; 
+    ret+="<table border=1><tr><td>By Station:</td> \n";
+    std::vector<int> last_heard(n_stations); 
     int istation = 0;
     for (int station : stations) 
     {
@@ -150,7 +150,7 @@ int main(int nargs, char ** args)
       PGresult *r = PQexecPrepared(db, "lastheard_stmt",1,dbvals,&len,&binary,1) ; 
       struct timespec tnow; 
       clock_gettime(CLOCK_REALTIME,&tnow); 
-      double now = tnow.tv_sec + tnow.tv_nsec; 
+      double now = tnow.tv_sec + tnow.tv_nsec*1e-9; 
       double when = 0; 
       if (PQresultStatus(r) != PGRES_TUPLES_OK) 
       {
@@ -160,30 +160,29 @@ int main(int nargs, char ** args)
       {
         uint64_t * binwhen = (uint64_t*) PQgetvalue(r,0,0); 
 
-        union { uint64_t ll; double d; } pun; 
 
-        pun.ll = be64toh(*binwhen); 
-        when =  pun.d; 
+        //convert to unix time 
+        when = be64toh(*binwhen)/1.e6 + 946684800; 
       }
 
-      last_heard[istation++] = now-when; 
+      last_heard[istation++] = round(now-when); 
       PQclear(r); 
 
     }
+    ret +="</tr><tr><td> Age of latest packet </td>\n"; 
+    for (int last : last_heard) 
+    {
+      ret += "<td> " + std::to_string(last) + " s</td>\n"; 
+    }
 
-    ret +="</tr><tr><td> By DAQBox: </td> \n"; 
+    ret += "</tr></table><p>\n"; 
+    ret +="<table border=1><tr><td> By DAQBox: </td> \n"; 
     for (int daqbox : daqboxes) 
     {
      ret += "<td> <a href='/station/" + std::to_string(get_station_from_daqbox(daqbox))+"'>" + std::to_string(daqbox) + "</a> </td>\n"; 
     }
 
-    ret +="</tr><tr><td> Age of latest packet </td>\n"; 
-    for (double last : last_heard) 
-    {
-      ret += "<td> " + std::to_string(last) + " s</td>\n"; 
-    }
-
-    ret += "</tr></table><p> <a href='https://github.com/rno-g/rno-g-lora'>you can help make this less crappy</a></body></html>"; 
+    ret += "</tr></table><p><a href='https://github.com/rno-g/rno-g-lora'>you can help make this less crappy</a></body></html>"; 
     return ret; 
   }); 
 
