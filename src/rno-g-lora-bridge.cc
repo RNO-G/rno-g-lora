@@ -29,8 +29,8 @@ bool clean_sesh = true;
 bool debug_out = false; 
 const char * insert_stmt_name = "insert_json_payload"; 
 const char * insert_stmt = 
-                   "INSERT INTO inbox (source_id,source_name, msg_type, rcv_time, fcnt, freq, rssi, confirmed, msg_raw, msg_payload) "
-                   "VALUES ($1::integer, $2, $3::integer, $4, $5::integer, $6::integer, $7::integer, $8::boolean, $9::bytea, $10)"; 
+                   "INSERT INTO inbox (source_id,daqbox, source_name, msg_type, rcv_time, fcnt, freq, rssi, confirmed, msg_raw, msg_payload) "
+                   "VALUES ($1::integer,$2::integer, $3, $4::integer, $5, $6::integer, $7::integer, $8::integer, $9::boolean, $10::bytea, $11)"; 
 volatile int time_to_quit = 0; 
 PGconn * db = 0; 
 bool nodb=false; 
@@ -165,7 +165,7 @@ void message_received(mosquitto * , void * , const mosquitto_message *msg)
 
     else if (port == RNO_G_MSG_LTE_STATS) 
     {
-      rno_g_lte_stats stats; 
+      rno_g_lte_stats_t stats; 
       boost::beast::detail::base64::decode(&stats, msg_b64.c_str(), msg_b64.size()); 
       bytes.resize(sizeof(stats)); 
       memcpy(&bytes[0], &stats, sizeof(stats)); 
@@ -183,6 +183,29 @@ void message_received(mosquitto * , void * , const mosquitto_message *msg)
       payload_json["n_parsed_ok"] = stats.parsed_ok;
     }
 
+
+    else if (port == RNO_G_MSG_LORA_STATS) 
+    {
+      rno_g_lora_stats_t stats; 
+      boost::beast::detail::base64::decode(&stats, msg_b64.c_str(), msg_b64.size()); 
+      bytes.resize(sizeof(stats)); 
+      memcpy(&bytes[0], &stats, sizeof(stats)); 
+
+      payload_json["when"] = stats.when;
+      payload_json["uptime"] = stats.uptime;
+      payload_json["rx"] = stats.rx;
+      payload_json["tx"] = stats.tx;
+      payload_json["rx_dropped"] = stats.rx_dropped;
+      payload_json["tx_dropped"] = stats.tx_dropped;
+      payload_json["last_recv"] = stats.last_recv; 
+      payload_json["last_sent"] = stats.last_sent; 
+      payload_json["join_time"] = stats.join_time; 
+      payload_json["rssi"] = stats.rssi; 
+      payload_json["snr"] = stats.snr; 
+    }
+
+
+
    std::string payload_as_str = boost::json::serialize(payload_json); 
 
    if (verbose) 
@@ -190,33 +213,37 @@ void message_received(mosquitto * , void * , const mosquitto_message *msg)
      std::cout << payload_as_str << std::endl; ; 
    }
 
-   const char * dbvals[10]; 
-   int lens[10] = {0}; 
-   int binary[10] = {1,0,1,0,1,1,1,1,1,0}; 
+   const char * dbvals[11]; 
+   int lens[11] = {0}; 
+   int binary[11] = {1,1,0,1,0,1,1,1,1,1,0}; 
+   int daqbox = get_daqbox_from_station(station); 
 
    //network byte order
    int station_for_db = htonl(station); 
    dbvals[0] = (const char*)  &station_for_db; 
    lens[0] = sizeof(int);; 
-   dbvals[1] = get_name(station); 
+   int daqbox_for_db = htonl(daqbox); 
+   dbvals[1] = (const char*)  &daqbox_for_db; 
+   lens[1] = sizeof(int);; 
+   dbvals[2] = get_name(station); 
    int port_for_db = htonl(port);
-   dbvals[2] = (const char*) &port_for_db; 
-   lens[2] = 4; 
-   dbvals[3] = timestr.c_str(); 
+   dbvals[3] = (const char*) &port_for_db; 
+   lens[3] = 4; 
+   dbvals[4] = timestr.c_str(); 
    int fcnt_for_db = htonl(count); 
-   dbvals[4] = (const char*) &fcnt_for_db; 
-   lens[4] = sizeof(int);
-   int freq_for_db = htonl(freq);
-   dbvals[5] =(const char*) &freq_for_db; 
+   dbvals[5] = (const char*) &fcnt_for_db; 
    lens[5] = sizeof(int);
-   int rssi_for_db = htonl(rssi);
-   dbvals[6] =(const char*) &rssi_for_db; 
+   int freq_for_db = htonl(freq);
+   dbvals[6] =(const char*) &freq_for_db; 
    lens[6] = sizeof(int);
-   dbvals[7] = (const char*) &confirmed; 
-   lens[7] = 1; 
-   dbvals[8] = (const char*) &bytes[0]; 
-   lens[8] = bytes.size(); 
-   dbvals[9] = payload_as_str.c_str(); 
+   int rssi_for_db = htonl(rssi);
+   dbvals[7] =(const char*) &rssi_for_db; 
+   lens[7] = sizeof(int);
+   dbvals[8] = (const char*) &confirmed; 
+   lens[8] = 1; 
+   dbvals[9] = (const char*) &bytes[0]; 
+   lens[9] = bytes.size(); 
+   dbvals[10] = payload_as_str.c_str(); 
 
    //Insert into our database
    PGresult * res = PQexecPrepared(db, insert_stmt_name, 10,  dbvals, lens,binary,0); 
