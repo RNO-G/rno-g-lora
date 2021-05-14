@@ -2,9 +2,11 @@
 #include <iostream> 
 #include <sstream> 
 #include "libpq-fe.h" 
-#include <arpa/inet.h> 
+#include <endian.h> 
 #include "rno-g-lora-common.h"
 #include <ctime> 
+
+
 
 
 int stations[] = ENABLED_STATIONS; 
@@ -12,13 +14,14 @@ int n_stations = sizeof(stations)/sizeof(*stations);
 int daqboxes[] = ENABLED_DAQBOXES; 
 
 
-std::string current_time() 
+std::string current_time(time_t *when = 0) 
 {
   time_t now; 
   time(&now) ; 
   std::string ret = "current time: " ; 
   char buf[32]; 
   ret += ctime_r(&now,buf); 
+  if (when) *when=now; 
   return ret; 
 }
 
@@ -95,6 +98,7 @@ int main(int nargs, char ** args)
   res = PQprepare(db,"station_stmt",
       "SELECT msg_id, msg_type, rcv_time, fcnt, freq, rssi, msg_payload from inbox WHERE source_id = $1::integer ORDER BY msg_id DESC LIMIT 50;" ,0,0); 
 
+
   if (PQresultStatus(res) != PGRES_COMMAND_OK) 
   {
     std::cerr << "PREPARE failed " << PQresultStatus(res) << ": " << PQresultErrorMessage(res) << std::endl << PQerrorMessage(db) << std::endl; 
@@ -103,24 +107,83 @@ int main(int nargs, char ** args)
 
   PQclear(res); 
 
+  res = PQprepare(db,"lastheard_stmt",
+      "SELECT rcv_time FROM inbox WHERE source_id = $1::integer ORDER BY msg_id DESC LIMIT 1;" ,0,0); 
 
+
+  if (PQresultStatus(res) != PGRES_COMMAND_OK) 
+  {
+    std::cerr << "PREPARE failed " << PQresultStatus(res) << ": " << PQresultErrorMessage(res) << std::endl << PQerrorMessage(db) << std::endl; 
+    return 1; 
+  }
+
+  PQclear(res); 
+
+  res = PQprepare(db,"lora_stmt",
+      "SELECT msg_id, source_id,source_name, rcv_time, fcnt, freq, rssi, msg_payload from inbox WHERE msg_type = 3 ORDER BY msg_id DESC LIMIT 50;" ,0,0); 
+
+  if (PQresultStatus(res) != PGRES_COMMAND_OK) 
+  {
+    std::cerr << "PREPARE failed " << PQresultStatus(res) << ": " << PQresultErrorMessage(res) << std::endl << PQerrorMessage(db) << std::endl; 
+    return 1; 
+  }
+  PQclear(res); 
+
+ 
 
   CROW_ROUTE(app,"/")( []()
   {
-    std::string ret =  "<html><head><title>LORA</title></head><body><h1>LORA Monitoring</h1><p> <a href='/report'>report</a> | <a href='/lte'>LTE </a><p>By Station: \n";
+    char hostname[512]; 
+    gethostname(hostname,511); 
+    std::string ret =  "<html><head><title>LORA</title></head><body><h1>LORA Monitoring</h1><p>See also <a href='/' onclick='javascript:event.target.port=3000'>grafana</a>.<p> <a href='/report'>All Station Reports</a> | <a href='/lte'>All LTE Stats </a> | <a href='/lora'>All LORA Stats</a> <hr>\n"; 
+    ret+="<table><tr><<td>By Station:</td> \n";
+    std::vector<double> last_heard(n_stations); 
+    int istation = 0;
     for (int station : stations) 
     {
-     ret += "| <a href='/station/" + std::to_string(station)+"'>" + std::to_string(station) + "</a> |\n"; 
+      ret += "<td> <a href='/station/" + std::to_string(station)+"'>" + std::to_string(station) + "</a> </td>\n"; 
+      int station_for_db = htonl(station); 
+      const char * dbvals[1]; 
+      dbvals[0] = (const char*) &station_for_db; 
+      int len = 4; 
+      int binary = 1; 
+      PGresult *r = PQexecPrepared(db, "lastheard_stmt",1,dbvals,&len,&binary,1) ; 
+      struct timespec tnow; 
+      clock_gettime(CLOCK_REALTIME,&tnow); 
+      double now = tnow.tv_sec + tnow.tv_nsec; 
+      double when = 0; 
+      if (PQresultStatus(r) != PGRES_TUPLES_OK) 
+      {
+        return std::string("exec failed ") + std::to_string(PQresultStatus(r)) + std::string(": ") + std::string(PQresultErrorMessage(r)) + std::string("\n") + std::string(PQerrorMessage(db)); 
+      }
+      else
+      {
+        uint64_t * binwhen = (uint64_t*) PQgetvalue(r,0,0); 
+
+        union { uint64_t ll; double d; } pun; 
+
+        pun.ll = be64toh(*binwhen); 
+        when =  pun.d; 
+      }
+
+      last_heard[istation++] = now-when; 
+      PQclear(r); 
+
     }
 
-    ret +="<p> By DAQBox: "; 
-     for (int daqbox : daqboxes) 
+    ret +="</tr><tr><td> By DAQBox: </td> \n"; 
+    for (int daqbox : daqboxes) 
     {
-     ret += "| <a href='/station/" + std::to_string(get_station_from_daqbox(daqbox))+"'>" + std::to_string(daqbox) + "</a> |\n"; 
+     ret += "<td> <a href='/station/" + std::to_string(get_station_from_daqbox(daqbox))+"'>" + std::to_string(daqbox) + "</a> </td>\n"; 
     }
 
+    ret +="</tr><tr><td> Age of latest packet </td>\n"; 
+    for (double last : last_heard) 
+    {
+      ret += "<td> " + std::to_string(last) + " s</td>\n"; 
+    }
 
-    ret += "<p> <a href='https://github.com/rno-g/rno-g-lora'>you can help make this less crappy</a></body></html>"; 
+    ret += "</tr></table><p> <a href='https://github.com/rno-g/rno-g-lora'>you can help make this less crappy</a></body></html>"; 
     return ret; 
   }); 
 
@@ -139,6 +202,24 @@ int main(int nargs, char ** args)
     PQclear(r); 
     return ret; 
   }); 
+
+  CROW_ROUTE(app,"/lora")( []() 
+  {
+    PGresult *r = PQexecPrepared(db, "lora_stmt",0,0,0,0,0) ; 
+    if (PQresultStatus(r) != PGRES_TUPLES_OK) 
+    {
+      return std::string("exec failed ") + std::to_string(PQresultStatus(r)) + std::string(": ") + std::string(PQresultErrorMessage(r)) + std::string("\n") + std::string(PQerrorMessage(db)); 
+    }
+
+    std::string ret = "<html>\n<head>\n<title>LORA</title></head><body><h1>LORA STATS</h1><p><a href='/'>[back]</a>\n<hr>\n"; 
+    ret += "<p>" + current_time(); 
+    ret += make_table(r); 
+    ret += "\n</body></html>"; 
+    PQclear(r); 
+    return ret; 
+  }); 
+
+
 
   CROW_ROUTE(app,"/report")( []() 
   {

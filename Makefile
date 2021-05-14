@@ -9,7 +9,7 @@ LDFLAGS+=-lpthread -L3rdparty/lib -lboost_system -lboost_container -lboost_json 
 build: 
 	mkdir -p $@
 
-build/%: src/%.cc | 3rdparty build
+build/%: src/%.cc src/rno-g-lora-common.h | 3rdparty build
 	c++ $(CXXFLAGS)  -o $@ $^ $(LDFLAGS) 
 
 
