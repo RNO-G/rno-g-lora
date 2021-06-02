@@ -66,7 +66,7 @@ void message_received(mosquitto * , void * , const mosquitto_message *msg)
     int count = json_payload.at("fCnt").as_int64(); 
     auto device = json_payload.at("deviceName").as_string(); 
     auto devEUI_b64 = json_payload.at("devEUI").as_string();
-    auto msg_b64 = json_payload.at("data").as_string(); 
+    auto msg_b64 = json_payload.at("data") == nullptr ? "" : json_payload.at("data").as_string(); 
     int freq= json_payload.at("txInfo").at("frequency").as_int64(); 
     int rssi = json_payload.at("rxInfo").at(0).at("rssi").as_int64(); 
     auto timestr = json_payload.at("rxInfo").at(0).at("time").as_string(); 
@@ -262,6 +262,10 @@ void message_received(mosquitto * , void * , const mosquitto_message *msg)
   catch (const std::exception & ex) 
   {
     std::cerr << "EXCEPTION:" << ex.what() << std::endl; 
+    std::cerr <<  "=========== START JSON PAYLOAD===================" << std::endl;
+    std::cerr <<  json_payload << std::endl;
+    std::cerr <<  "===========END JSON PAYLOAD===================" << std::endl;
+
   }
 
 }
