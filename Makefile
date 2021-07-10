@@ -27,6 +27,13 @@ build/%: src/%.cc src/rno-g-lora-common.h | 3rdparty build
 	cd 3rdparty && wget https://pilotfiber.dl.sourceforge.net/project/boost/boost/1.76.0/boost_1_76_0.tar.gz
 	
 
+install:
+	install systemd/rno-g-lora-bridge.service /usr/lib/systemd/system/
+	install systemd/rno-g-lora-web.service /usr/lib/systemd/system/
+	systemctl daemon-reload
+	systemctl enable rno-g-lora-bridge
+	systemctl enable rno-g-lora-web
+
 
 clean: 
 	rm -rf build

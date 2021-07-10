@@ -1,0 +1,12 @@
+[Unit] 
+Description="Bridge between LoRAWAN and postgresql service" 
+After=postgresql.service mosquitto.service
+
+[Service]
+User=lora
+Group=lora
+ExecStart=/home/lora/rno-g-lora/build/rno-g-lora-bridge
+EnvironmentFile=/home/lora/rno-g-lora/env.sh 
+
+[Install]
+WantedBy=multi-user.target

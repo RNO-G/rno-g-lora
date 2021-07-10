@@ -1,0 +1,12 @@
+[Unit] 
+Description="LORA Web" 
+After=postgresql.service mosquitto.service
+
+[Service]
+User=lora
+Group=lora
+ExecStart=/home/lora/rno-g-lora/build/rno-g-lora-web
+EnvironmentFile=/home/lora/rno-g-lora/env.sh 
+
+[Install]
+WantedBy=multi-user.target
