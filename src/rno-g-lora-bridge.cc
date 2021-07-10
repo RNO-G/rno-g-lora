@@ -14,6 +14,7 @@
 #include <csignal> 
 #include <arpa/inet.h> 
 #include "rno-g-lora-common.h"
+#include "CLI11.hpp" 
 
 
 //postgreqsql
@@ -23,7 +24,8 @@
 
 int app_number = 2; 
 int mosquitto_port = 1883; 
-const char * host = "localhost"; 
+std::string host = "localhost"; 
+std::string conn_info = pg_conn_info; 
 int keep_alive = 60; 
 bool clean_sesh = true; 
 bool debug_out = false; 
@@ -64,7 +66,7 @@ void message_received(mosquitto * , void * , const mosquitto_message *msg)
     int count = json_payload.at("fCnt").as_int64(); 
     auto device = json_payload.at("deviceName").as_string(); 
     auto devEUI_b64 = json_payload.at("devEUI").as_string();
-    auto msg_b64 = json_payload.at("data").as_string(); 
+    auto msg_b64 = json_payload.at("data") == nullptr ? "" : json_payload.at("data").as_string(); 
     int freq= json_payload.at("txInfo").at("frequency").as_int64(); 
     int rssi = json_payload.at("rxInfo").at(0).at("rssi").as_int64(); 
     auto timestr = json_payload.at("rxInfo").at(0).at("time").as_string(); 
@@ -213,57 +215,58 @@ void message_received(mosquitto * , void * , const mosquitto_message *msg)
      std::cout << payload_as_str << std::endl; ; 
    }
 
-   const char * dbvals[11]; 
-   int lens[11] = {0}; 
-   int binary[11] = {1,1,0,1,0,1,1,1,1,1,0}; 
-   int daqbox = get_daqbox_from_station(station); 
-
-   //network byte order
-   int station_for_db = htonl(station); 
-   dbvals[0] = (const char*)  &station_for_db; 
-   lens[0] = sizeof(int);; 
-   int daqbox_for_db = htonl(daqbox); 
-   dbvals[1] = (const char*)  &daqbox_for_db; 
-   lens[1] = sizeof(int);; 
-   dbvals[2] = get_name(station); 
-   int port_for_db = htonl(port);
-   dbvals[3] = (const char*) &port_for_db; 
-   lens[3] = 4; 
-   dbvals[4] = timestr.c_str(); 
-   int fcnt_for_db = htonl(count); 
-   dbvals[5] = (const char*) &fcnt_for_db; 
-   lens[5] = sizeof(int);
-   int freq_for_db = htonl(freq);
-   dbvals[6] =(const char*) &freq_for_db; 
-   lens[6] = sizeof(int);
-   int rssi_for_db = htonl(rssi);
-   dbvals[7] =(const char*) &rssi_for_db; 
-   lens[7] = sizeof(int);
-   dbvals[8] = (const char*) &confirmed; 
-   lens[8] = 1; 
-   dbvals[9] = (const char*) &bytes[0]; 
-   lens[9] = bytes.size(); 
-   dbvals[10] = payload_as_str.c_str(); 
-
-   //Insert into our database
-   PGresult * res = PQexecPrepared(db, insert_stmt_name, 11,  dbvals, lens,binary,0); 
-   if (PQresultStatus(res) != PGRES_COMMAND_OK) 
+   if (!nodb) 
    {
-      std::cerr << "exec failed " << PQresultStatus(res) << ": " << PQresultErrorMessage(res) << std::endl << PQerrorMessage(db) << std::endl; 
+     const char * dbvals[11]; 
+     int lens[11] = {0}; 
+     int binary[11] = {1,1,0,1,0,1,1,1,1,1,0}; 
+     int daqbox = get_daqbox_from_station(station); 
+
+     //network byte order
+     int station_for_db = htonl(station); 
+     dbvals[0] = (const char*)  &station_for_db; 
+     lens[0] = sizeof(int);; 
+     int daqbox_for_db = htonl(daqbox); 
+     dbvals[1] = (const char*)  &daqbox_for_db; 
+     lens[1] = sizeof(int);; 
+     dbvals[2] = get_name(station); 
+     int port_for_db = htonl(port);
+     dbvals[3] = (const char*) &port_for_db; 
+     lens[3] = 4; 
+     dbvals[4] = timestr.c_str(); 
+     int fcnt_for_db = htonl(count); 
+     dbvals[5] = (const char*) &fcnt_for_db; 
+     lens[5] = sizeof(int);
+     int freq_for_db = htonl(freq);
+     dbvals[6] =(const char*) &freq_for_db; 
+     lens[6] = sizeof(int);
+     int rssi_for_db = htonl(rssi);
+     dbvals[7] =(const char*) &rssi_for_db; 
+     lens[7] = sizeof(int);
+     dbvals[8] = (const char*) &confirmed; 
+     lens[8] = 1; 
+     dbvals[9] = (const char*) &bytes[0]; 
+     lens[9] = bytes.size(); 
+     dbvals[10] = payload_as_str.c_str(); 
+
+     //Insert into our database
+     PGresult * res = PQexecPrepared(db, insert_stmt_name, 11,  dbvals, lens,binary,0); 
+     if (PQresultStatus(res) != PGRES_COMMAND_OK) 
+     {
+        std::cerr << "exec failed " << PQresultStatus(res) << ": " << PQresultErrorMessage(res) << std::endl << PQerrorMessage(db) << std::endl; 
+     }
+
+     PQclear(res); 
    }
-
-   PQclear(res); 
-
-
-
   }
   catch (const std::exception & ex) 
   {
-    std::cerr << ex.what() << std::endl; 
+    std::cerr << "EXCEPTION:" << ex.what() << std::endl; 
+    std::cerr <<  "=========== START JSON PAYLOAD===================" << std::endl;
+    std::cerr <<  json_payload << std::endl;
+    std::cerr <<  "===========END JSON PAYLOAD===================" << std::endl;
+
   }
-
-
-
 
 }
 
@@ -311,8 +314,27 @@ void sigHandler(int signum)
 }
 
 
-int main(int , char **) 
+int main(int argc, char ** argv) 
 {
+
+  CLI::App app{"RNO-G Lora Bridge"}; 
+  app.add_option("-a,--application_id", app_number, "ChirpStack Application Number"); 
+  app.add_option("-H,--host", host, "MQTT host"); 
+  app.add_option("-p,--port", mosquitto_port, "MQTT port"); 
+  app.add_option("-k,--keep-alive", keep_alive, "MQTT Leepalive"); 
+  app.add_option("-d,--postgres-connection-info", conn_info, "PGSQL connection info (use dummy for no db)"); 
+  app.add_flag("-D,--debug",debug_out, "Enable debug output") ; 
+  app.add_flag("-v,--verbose",verbose, "Enable verbose output") ; 
+ 
+  CLI11_PARSE(app, argc, argv); 
+
+
+  if (conn_info=="dummy")
+  {
+    nodb = true; 
+  }
+
+
 
   //set up mosquitto 
   if (mosquitto_lib_init()) 
@@ -336,7 +358,7 @@ int main(int , char **)
   mosquitto_message_callback_set(mosq, message_received); 
   mosquitto_subscribe_callback_set(mosq, do_subscribe); 
 
-  if (mosquitto_connect(mosq, host, mosquitto_port, keep_alive))
+  if (mosquitto_connect(mosq, host.c_str(), mosquitto_port, keep_alive))
   {
     std::cerr << "Unable to connect (host = " << host  << " , port = " << mosquitto_port << ")" <<  std::endl; 
   }
@@ -346,39 +368,42 @@ int main(int , char **)
 
   //set up postgresql 
   
-  db = PQconnectdb(pg_conn_info); 
+  db = nodb ? NULL : PQconnectdb(conn_info.c_str()); 
 
-  if (PQstatus(db) != CONNECTION_OK) 
+  if (!nodb && PQstatus(db) != CONNECTION_OK) 
   {
     time_to_quit = 1; 
     std::cerr << "Connection to database failed: " << PQerrorMessage(db) << std::endl; 
   }
 
-  PGresult *res; 
-  //hopefully we don't have to worry about malicious users, but... 
-
-//  PGresult * res = PQexec(db, "SELECT pg_catalog.set_config('search_path', '', false)"); 
-//
-//  if (PQresultStatus(res) != PGRES_TUPLES_OK) 
-//  {
-//    std::cerr << "SET failed: " << PQerrorMessage(db) << std::endl; 
-//    time_to_quit =1; 
-//  }
-//
-//  PQclear(res); 
-
-
-  //prepare the insert statements
-  res = PQprepare(db,  insert_stmt_name, insert_stmt,0,0); 
-  if (PQresultStatus(res) != PGRES_COMMAND_OK) 
+  if (!nodb) 
   {
-    std::cerr << "PREPARE failed " << PQresultStatus(res) << ": " << PQresultErrorMessage(res) << std::endl << PQerrorMessage(db) << std::endl; 
-    time_to_quit =1; 
+    PGresult *res; 
+    //hopefully we don't have to worry about malicious users, but... 
+
+  //  PGresult * res = PQexec(db, "SELECT pg_catalog.set_config('search_path', '', false)"); 
+  //
+  //  if (PQresultStatus(res) != PGRES_TUPLES_OK) 
+  //  {
+  //    std::cerr << "SET failed: " << PQerrorMessage(db) << std::endl; 
+  //    time_to_quit =1; 
+  //  }
+  //
+  //  PQclear(res); 
+
+
+    //prepare the insert statements
+    res = PQprepare(db,  insert_stmt_name, insert_stmt,0,0); 
+    if (PQresultStatus(res) != PGRES_COMMAND_OK) 
+    {
+      std::cerr << "PREPARE failed " << PQresultStatus(res) << ": " << PQresultErrorMessage(res) << std::endl << PQerrorMessage(db) << std::endl; 
+      time_to_quit =1; 
+    }
+
+
+
+    PQclear(res); 
   }
-
-
-
-  PQclear(res); 
 
   while (!time_to_quit) 
   {
@@ -386,7 +411,8 @@ int main(int , char **)
   }
 
 
-  PQfinish(db); 
+  if (!nodb) 
+    PQfinish(db); 
   mosquitto_destroy(mosq); 
   mosquitto_lib_cleanup(); 
 

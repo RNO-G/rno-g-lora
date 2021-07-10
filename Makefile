@@ -1,10 +1,27 @@
 
 
 all: 3rdparty build/rno-g-lora-web build/rno-g-lora-bridge
-3rdparty:  3rdparty/include/boost 3rdparty/include/crow_all.h
+3rdparty:  3rdparty/include/boost 3rdparty/include/crow_all.h 3rdparty/include/CLI11.hpp
 
 CXXFLAGS+=-Os -g -I3rdparty/include -Wall -Wextra -I/rno-g/include
-LDFLAGS+=-lpthread -L3rdparty/lib -lboost_system -lboost_container -lboost_json -lz -lmosquitto -lpq
+LDFLAGS+=-lpthread -L3rdparty/lib -lboost_system -lboost_container -lboost_json -lz -lmosquitto -lpq -Wl,-rpath='$$ORIGIN/../3rdparty/lib' 
+
+RNO_G_INSTALL_DIR?=/rno-g/
+PREFIX?=$(RNO_G_INSTALL_DIR)
+
+
+
+install: 
+	mkdir -p $(PREFIX)/3rdparty/lib
+	mkdir -p $(PREFIX)/bin
+	# have to install appropriate  boost_sytem/boost_container/ boost_json, but we'll put them elsewhere in the tree and make sure our RPATH is correct! 
+	install 3rdparty/lib/libboost_system.so* $(PREFIX)/3rdparty/lib/
+	install 3rdparty/lib/libboost_container.so* $(PREFIX)/3rdparty/lib/
+	install 3rdparty/lib/libboost_json.so* $(PREFIX)/3rdparty/lib/
+	install build/rno-g-lora-bridge $(PREFIX)/bin
+	install build/rno-g-lora-web $(PREFIX)/bin
+	
+
 
 build: 
 	mkdir -p $@
@@ -21,6 +38,11 @@ build/%: src/%.cc src/rno-g-lora-common.h | 3rdparty build
 3rdparty/include/crow_all.h:
 	mkdir -p 3rdparty/include
 	cd 3rdparty/include && wget https://github.com/CrowCpp/crow/releases/download/0.2/crow_all.h
+
+3rdparty/include/CLI11.hpp:
+	mkdir -p 3rdparty/include
+	cd 3rdparty/include && wget https://github.com/CLIUtils/CLI11/releases/download/v1.9.1/CLI11.hpp
+
 
 3rdparty/boost_1_76_0.tar.gz: 
 	mkdir -p 3rdparty
