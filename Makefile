@@ -10,19 +10,6 @@ RNO_G_INSTALL_DIR?=/rno-g/
 PREFIX?=$(RNO_G_INSTALL_DIR)
 
 
-
-install: 
-	mkdir -p $(PREFIX)/3rdparty/lib
-	mkdir -p $(PREFIX)/bin
-	# have to install appropriate  boost_sytem/boost_container/ boost_json, but we'll put them elsewhere in the tree and make sure our RPATH is correct! 
-	install 3rdparty/lib/libboost_system.so* $(PREFIX)/3rdparty/lib/
-	install 3rdparty/lib/libboost_container.so* $(PREFIX)/3rdparty/lib/
-	install 3rdparty/lib/libboost_json.so* $(PREFIX)/3rdparty/lib/
-	install build/rno-g-lora-bridge $(PREFIX)/bin
-	install build/rno-g-lora-web $(PREFIX)/bin
-	
-
-
 build: 
 	mkdir -p $@
 
