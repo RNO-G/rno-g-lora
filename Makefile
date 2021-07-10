@@ -37,11 +37,18 @@ build/%: src/%.cc src/rno-g-lora-common.h | 3rdparty build
 	
 
 install:
+	mkdir -p /rno-g/lora/3rdparty/lib/
+	install build/rno-g-lora-web /rno-g/lora
+	install build/rno-g-lora-bridge /rno-g/lora
+	install env.sh /rno-g/lora
+	install 3rdparty/lib/lib* /rno-g/lora/3rdparty/lib
 	install systemd/rno-g-lora-bridge.service /usr/lib/systemd/system/
 	install systemd/rno-g-lora-web.service /usr/lib/systemd/system/
 	systemctl daemon-reload
 	systemctl enable rno-g-lora-bridge
 	systemctl enable rno-g-lora-web
+	semanage fcontext -a -t bin_t "/rno-g/lora(/.*)?"
+	restorecon -r -v /rno-g/lora
 
 
 clean: 
