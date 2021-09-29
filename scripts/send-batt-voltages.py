@@ -42,7 +42,7 @@ msg = (
 topic = f"application/{APPLICATION_ID}/device/{devstring}/command/down"
 print(topic) 
 print(msg) 
-#pub.single(topic,msg,hostname="localhost") 
+pub.single(topic,msg,hostname="localhost") 
 
 
 
