@@ -135,7 +135,7 @@ int main(int nargs, char ** args)
   {
     char hostname[512]; 
     gethostname(hostname,511); 
-    std::string ret =  "<html><head><title>LORA</title></head><body><h1>LORA Monitoring</h1><p>See also <a href='https://rno-g.uchicago.edu:3000'>grafana</a>.<p> <a href='/report'>All Station Reports</a> | <a href='/lte'>All LTE Stats </a> | <a href='/lora'>All LORA Stats</a> <hr>\n"; 
+    std::string ret =  "<html><head><title>LORA</title></head><body><h1>LORA Monitoring</h1><p>See also <a href='https://192.168.99.50:3000'>grafana</a>.<p> <a href='/report'>All Station Reports</a> | <a href='/lte'>All LTE Stats </a> | <a href='/lora'>All LORA Stats</a> <hr>\n"; 
     ret+="<table border=1><tr><td>By Station:</td> \n";
     std::vector<int> last_heard(n_stations); 
     int istation = 0;
