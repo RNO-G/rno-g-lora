@@ -81,7 +81,7 @@ void message_received(mosquitto * , void * , const mosquitto_message *msg)
     int freq= json_payload.at("txInfo").at("frequency").as_int64(); 
     int rssi = json_payload.at("rxInfo").at(0).at("rssi").as_int64(); 
     auto timestr = json_payload.at("rxInfo").at(0).at("time").as_string(); 
-    uint8_t confirmed = json_payload.at("confirmedUplink").as_bool(); 
+    uint8_t confirmed = json_payload.get_object().count("confirmedUplink") ? json_payload.at("confirmedUplink").as_bool() : false; 
 
  //   uint8_t devEUI[8] = {0}; 
 //    boost::beast::detail::base64::decode(devEUI, devEUI_b64.c_str(), devEUI_b64.size()); 
