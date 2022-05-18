@@ -76,16 +76,16 @@ void message_received(mosquitto * , void * , const mosquitto_message *msg)
     int port = json_payload.at("fPort").as_int64(); 
     int count = json_payload.at("fCnt").as_int64(); 
     auto device = json_payload.at("deviceName").as_string(); 
-    auto devEUI_b64 = json_payload.at("devEUI").as_string();
+    auto devEUI = json_payload.at("devEUI").as_string();
     auto msg_b64 = json_payload.at("data") == nullptr ? "" : json_payload.at("data").as_string(); 
     int freq= json_payload.at("txInfo").at("frequency").as_int64(); 
     int rssi = json_payload.at("rxInfo").at(0).at("rssi").as_int64(); 
     auto timestr = json_payload.at("rxInfo").at(0).at("time").as_string(); 
     uint8_t confirmed = json_payload.at("confirmedUplink").as_bool(); 
 
-    uint8_t devEUI[8] = {0}; 
-    boost::beast::detail::base64::decode(devEUI, devEUI_b64.c_str(), devEUI_b64.size()); 
-    int station = devEUI[7] + (devEUI[6] << 8); 
+ //   uint8_t devEUI[8] = {0}; 
+//    boost::beast::detail::base64::decode(devEUI, devEUI_b64.c_str(), devEUI_b64.size()); 
+    int station = strtoull(devEUI.c_str(),0,16) & 0xffff; 
 
     if (verbose) 
     {
