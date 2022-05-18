@@ -83,18 +83,12 @@ void message_received(mosquitto * , void * , const mosquitto_message *msg)
     auto timestr = json_payload.at("rxInfo").at(0).at("time").as_string(); 
     uint8_t confirmed = json_payload.get_object().count("confirmedUplink") ? json_payload.at("confirmedUplink").as_bool() : false; 
 
- //   uint8_t devEUI[8] = {0}; 
-//    boost::beast::detail::base64::decode(devEUI, devEUI_b64.c_str(), devEUI_b64.size()); 
     int station = strtoull(devEUI.c_str(),0,16) & 0xffff; 
 
     if (verbose) 
     {
       std::cout << "From:  "  << device<< " ( " <<get_name(station) << " / " ;
-      for (int i = 0; i < 8; i++) 
-      {
-          std::cout << std::hex << std::setfill('0') << std::setw(2) << (int) devEUI[i]; 
-      }
-      std::cout << std::dec<< " / " << station <<  "), port:" << port << ", count: " << count << ", freq: " << freq  << ", rssi: " << rssi << " dB"  << std::endl; 
+      std::cout << devEUI << " / " << station <<  "), port:" << port << ", count: " << count << ", freq: " << freq  << ", rssi: " << rssi << " dB"  << std::endl; 
     }
 
     std::vector<uint8_t> bytes; 
