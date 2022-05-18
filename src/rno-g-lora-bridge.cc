@@ -39,6 +39,17 @@ bool nodb=false;
 bool verbose=true; 
 
 
+template<typename... Args> 
+size_t  string_fmt(std::string & s, const char * fmt, Args... args)
+{
+  size_t len = snprintf(nullptr,0, fmt, args...); 
+  s.reserve(len+1); 
+  s.resize(len); 
+  snprintf(&s[0], len+1, fmt, args...); 
+  return len; 
+}
+
+
 
 boost::json::stream_parser json_parse; 
 void message_received(mosquitto * , void * , const mosquitto_message *msg)
@@ -86,8 +97,8 @@ void message_received(mosquitto * , void * , const mosquitto_message *msg)
       std::cout << std::dec<< " / " << station <<  "), port:" << port << ", count: " << count << ", freq: " << freq  << ", rssi: " << rssi << " dB"  << std::endl; 
     }
 
-    boost::json::object payload_json; 
     std::vector<uint8_t> bytes; 
+    std::string json_as_str; 
 
     if (port == RNO_G_MSG_REPORT )  
     {
@@ -96,7 +107,7 @@ void message_received(mosquitto * , void * , const mosquitto_message *msg)
       bytes.resize(sizeof(report)); 
       memcpy(&bytes[0], &report, sizeof(report)); 
       
-      boost::json::object report_json; 
+      boost::json::object payload_json; 
       payload_json ["when"] = report.when; 
       payload_json ["mode"] = get_mode(report); 
       payload_json ["lte_state"] = get_lte_state(report); 
@@ -162,6 +173,8 @@ void message_received(mosquitto * , void * , const mosquitto_message *msg)
         }
       }; 
 
+      json_as_str = boost::json::serialize(payload_json); 
+
 
     }
 
@@ -172,6 +185,7 @@ void message_received(mosquitto * , void * , const mosquitto_message *msg)
       bytes.resize(sizeof(stats)); 
       memcpy(&bytes[0], &stats, sizeof(stats)); 
 
+      boost::json::object payload_json; 
       payload_json["when"] = stats.when;
       payload_json["mcc"] = stats.mcc;
       payload_json["mnc"] = stats.mnc;
@@ -183,6 +197,7 @@ void message_received(mosquitto * , void * , const mosquitto_message *msg)
       payload_json["band"] = stats.band;
       payload_json["service_domain"] = stats.service_domain;
       payload_json["n_parsed_ok"] = stats.parsed_ok;
+      json_as_str = boost::json::serialize(payload_json); 
     }
 
 
@@ -192,6 +207,7 @@ void message_received(mosquitto * , void * , const mosquitto_message *msg)
       boost::beast::detail::base64::decode(&stats, msg_b64.c_str(), msg_b64.size()); 
       bytes.resize(sizeof(stats)); 
       memcpy(&bytes[0], &stats, sizeof(stats)); 
+      boost::json::object payload_json; 
 
       payload_json["when"] = stats.when;
       payload_json["uptime"] = stats.uptime;
@@ -204,15 +220,22 @@ void message_received(mosquitto * , void * , const mosquitto_message *msg)
       payload_json["join_time"] = stats.join_time; 
       payload_json["rssi"] = stats.rssi; 
       payload_json["snr"] = stats.snr; 
+      json_as_str = boost::json::serialize(payload_json); 
+    }
+
+    else if (port == RNO_G_MSG_REPORT_V2)
+    {
+      rno_g_report_v2_t report; 
+      boost::beast::detail::base64::decode(&report, msg_b64.c_str(), msg_b64.size()); 
+      bytes.resize(sizeof(report)); 
+      memcpy(&bytes[0], &report, sizeof(report)); 
+      string_fmt(json_as_str, RNO_G_REPORT_V2_JSON_FMT, RNO_G_REPORT_V2_JSON_VALS((&report))); 
     }
 
 
-
-   std::string payload_as_str = boost::json::serialize(payload_json); 
-
    if (verbose) 
    {
-     std::cout << payload_as_str << std::endl; ; 
+     std::cout << json_as_str << std::endl; ; 
    }
 
    if (!nodb) 
@@ -247,7 +270,7 @@ void message_received(mosquitto * , void * , const mosquitto_message *msg)
      lens[8] = 1; 
      dbvals[9] = (const char*) &bytes[0]; 
      lens[9] = bytes.size(); 
-     dbvals[10] = payload_as_str.c_str(); 
+     dbvals[10] = json_as_str.c_str(); 
 
      //Insert into our database
      PGresult * res = PQexecPrepared(db, insert_stmt_name, 11,  dbvals, lens,binary,0); 
