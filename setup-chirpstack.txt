@@ -28,6 +28,7 @@ create extension pg_hstore;
 
   Maybe change  marhsaller from protobuf to json? Not sure yet. 
 
+  add fake_rx_time=true to semtech_udp
 
 /etc/chirpstack-network-server/chirpstack-network-server.toml: 
 
@@ -45,7 +46,7 @@ for band plan:
 
 
 
-/etc/chirpstack-network-server/chirpstack-network-server.toml: 
+/etc/chirpstack-application-server/chirpstack-application-server.toml: 
 for database: 
 dsn="user=appserver dbname=chirpstack_as sslmode=disable host=/var/run/postgresql"  
 
