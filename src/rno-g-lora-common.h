@@ -9,13 +9,13 @@ inline int get_station_from_daqbox(int box)
   switch(box) 
   {
     case 1: 
-      return 210; 
+      return 25; 
     case 2: 
-      return 12; 
+      return 13; 
     case 3: 
-      return 110;
+      return 24;
     case 4: 
-      return 25;
+      return 15;
     case 5: 
       return 23;
     case 6: 
@@ -25,9 +25,9 @@ inline int get_station_from_daqbox(int box)
     case 8: 
       return 11; 
     case 9: 
-      return 15; 
+      return 12; 
     case 10:
-      return 25; 
+      return 14; 
     default: 
       return -1; 
   }
@@ -38,26 +38,26 @@ inline int get_daqbox_from_station(int station)
 {
   switch(station) 
   {
+    case 11: 
+      return 8; 
+    case 12: 
+      return 9; 
+    case 13: 
+      return 2; 
+    case 14: 
+      return 10; 
+    case 15: 
+      return 4; 
     case 21: 
       return 6; 
-    case 12: 
-      return 2; 
-    case 11: 
-      return 8;
-    case 99: 
-      return 4;
-    case 23: 
-      return 5;
-    case 13: 
-      return 6; 
     case 22: 
-      return 7; 
-    case 14: 
-      return 8; 
-    case 15: 
-      return 9; 
-    case 25:
-      return 4; 
+      return 7;
+    case 23: 
+      return 5; 
+    case 24: 
+      return 3; 
+    case 25: 
+      return 1; 
     default: 
       return 0; 
   }
