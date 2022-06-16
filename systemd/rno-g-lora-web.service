@@ -6,7 +6,7 @@ After=postgresql.service mosquitto.service
 User=lora
 Group=lora
 Environment=LD_LIBRARY_PATH=/rno-g/lora/3rdparty/lib
-ExecStart=/rno-g/lora/rno-g-lora-web
+ExecStart=/rno-g/lora/rno-g-lora-web -v
 
 [Install]
 WantedBy=multi-user.target
