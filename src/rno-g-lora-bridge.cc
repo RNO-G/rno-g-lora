@@ -338,7 +338,7 @@ int main(int argc, char ** argv)
   app.add_option("-a,--application_id", app_number, "ChirpStack Application Number"); 
   app.add_option("-H,--host", host, "MQTT host"); 
   app.add_option("-p,--port", mosquitto_port, "MQTT port"); 
-  app.add_option("-k,--keep-alive", keep_alive, "MQTT Leepalive"); 
+  app.add_option("-k,--keep-alive", keep_alive, "MQTT Keepalive"); 
   app.add_option("-d,--postgres-connection-info", conn_info, "PGSQL connection info (use dummy for no db)"); 
   app.add_flag("-D,--debug",debug_out, "Enable debug output") ; 
   app.add_flag("-v,--verbose",verbose, "Enable verbose output") ; 
@@ -349,6 +349,11 @@ int main(int argc, char ** argv)
   if (conn_info=="dummy")
   {
     nodb = true; 
+  }
+  else
+  {
+    std::cout << " Using conn_info: " << conn_info << std::endl; 
+
   }
 
 
