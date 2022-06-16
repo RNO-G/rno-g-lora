@@ -22,6 +22,7 @@
 
 
 
+bool eui_b64 = false; 
 int app_number = 2; 
 int mosquitto_port = 1883; 
 std::string host = "localhost"; 
@@ -76,14 +77,40 @@ void message_received(mosquitto * , void * , const mosquitto_message *msg)
     int port = json_payload.at("fPort").as_int64(); 
     int count = json_payload.at("fCnt").as_int64(); 
     auto device = json_payload.at("deviceName").as_string(); 
-    auto devEUI = json_payload.at("devEUI").as_string();
     auto msg_b64 = json_payload.at("data") == nullptr ? "" : json_payload.at("data").as_string(); 
     int freq= json_payload.at("txInfo").at("frequency").as_int64(); 
     int rssi = json_payload.at("rxInfo").at(0).at("rssi").as_int64(); 
     auto timestr = json_payload.at("rxInfo").at(0).at("time").as_string(); 
     uint8_t confirmed = json_payload.get_object().count("confirmedUplink") ? json_payload.at("confirmedUplink").as_bool() : false; 
 
-    int station = strtoull(devEUI.c_str(),0,16) & 0xffff; 
+
+    int station; 
+    boost::json::string devEUI; 
+
+    if (eui_b64) 
+    {
+      auto devEUI_b64 = json_payload.at("devEUI").as_string();
+      int8_t devEUI_arr[8] = {0}; 
+      boost::beast::detail::base64::decode(devEUI_arr, devEUI_b64.c_str(), devEUI_b64.size()); 
+      station = devEUI_arr[7] + (devEUI_arr[6] << 8); 
+      char devEUIbuf[17] = {0}; 
+      sprintf(devEUIbuf,"%02x%02x%02x%02x%02x%02x%02x%02x",
+          devEUI_arr[0], 
+          devEUI_arr[1], 
+          devEUI_arr[2], 
+          devEUI_arr[3], 
+          devEUI_arr[4], 
+          devEUI_arr[5], 
+          devEUI_arr[6], 
+          devEUI_arr[7]); 
+
+      devEUI = devEUIbuf; 
+    }
+    else
+    {
+      devEUI = json_payload.at("devEUI").as_string(); 
+      station = strtoull(devEUI.c_str(),0,16) & 0xffff; 
+    }
 
     if (verbose) 
     {
@@ -340,6 +367,7 @@ int main(int argc, char ** argv)
   app.add_option("-p,--port", mosquitto_port, "MQTT port"); 
   app.add_option("-k,--keep-alive", keep_alive, "MQTT Keepalive"); 
   app.add_option("-d,--postgres-connection-info", conn_info, "PGSQL connection info (use dummy for no db)"); 
+  app.add_option("-B,--base64-eui ", eui_b64, "EUI is base64"); 
   app.add_flag("-D,--debug",debug_out, "Enable debug output") ; 
   app.add_flag("-v,--verbose",verbose, "Enable verbose output") ; 
  
