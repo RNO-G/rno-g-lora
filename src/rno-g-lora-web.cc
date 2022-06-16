@@ -122,6 +122,10 @@ int parse(int nargs, char ** args)
     {
       conn_info = args[++i]; 
     }
+    else
+    {
+      return 1; 
+    }
 
   }
   return 0; 
@@ -160,7 +164,7 @@ int main(int nargs, char ** args)
 
   std::cout << "Using stations"; 
   for (auto s : stations) 
-    std::cout << s;
+    std::cout << s << " ";
   std::cout << std::endl; 
 
   crow::SimpleApp app; 
