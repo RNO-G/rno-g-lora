@@ -249,7 +249,7 @@ int main(int nargs, char ** args)
     }
 
 
-    std::string ret =  (boost::format("<html><head><title>LORA</title></head><body><h1>LORA Monitoring</h1><p>See also <a href='%1%'>grafana</a>.<p> <a href='%2%/report'>All Station Reports</a> | <a href='%2/lte'>All LTE Stats </a> | <a href='%2%/lora'>All LORA Stats</a> <hr>\n") % grafana % prefix ).str(); 
+    std::string ret =  (boost::format("<html><head><title>LORA</title></head><body><h1>LORA Monitoring</h1><p>See also <a href='%1%'>grafana</a>.<p> <a href='%2%/report'>All Station Reports</a> | <a href='%2%/lte'>All LTE Stats </a> | <a href='%2%/lora'>All LORA Stats</a> <hr>\n") % grafana % prefix ).str(); 
     ret+="<table border=1><tr><td>By Station:</td> \n";
     std::vector<int> last_heard(stations.size()); 
     int istation = 0;
