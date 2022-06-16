@@ -90,7 +90,7 @@ void message_received(mosquitto * , void * , const mosquitto_message *msg)
     if (eui_b64) 
     {
       auto devEUI_b64 = json_payload.at("devEUI").as_string();
-      int8_t devEUI_arr[8] = {0}; 
+      uint8_t devEUI_arr[8] = {0}; 
       boost::beast::detail::base64::decode(devEUI_arr, devEUI_b64.c_str(), devEUI_b64.size()); 
       station = devEUI_arr[7] + (devEUI_arr[6] << 8); 
       char devEUIbuf[17] = {0}; 
