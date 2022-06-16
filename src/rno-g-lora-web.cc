@@ -255,7 +255,7 @@ int main(int nargs, char ** args)
     int istation = 0;
     for (int station : stations) 
     {
-      ret += (boost::format("<td> <a href='%1/station/") % prefix).str()  + std::to_string(station)+"'>" + std::to_string(station) + "</a> </td>\n"; 
+      ret += (boost::format("<td> <a href='%1%/station/") % prefix).str()  + std::to_string(station)+"'>" + std::to_string(station) + "</a> </td>\n"; 
       int station_for_db = htonl(station); 
       const char * dbvals[1]; 
       dbvals[0] = (const char*) &station_for_db; 
@@ -301,7 +301,7 @@ int main(int nargs, char ** args)
       return std::string("exec failed ") + std::to_string(PQresultStatus(r)) + std::string(": ") + std::string(PQresultErrorMessage(r)) + std::string("\n") + std::string(PQerrorMessage(db)); 
     }
 
-    std::string ret = (boost::format("<html>\n<head>\n<title>LTE</title></head><body><h1>LTE STATS</h1><p><a href='%1/'>[back]</a>\n<hr>\n") % prefix).str();  
+    std::string ret = (boost::format("<html>\n<head>\n<title>LTE</title></head><body><h1>LTE STATS</h1><p><a href='%1%/'>[back]</a>\n<hr>\n") % prefix).str();  
     ret += "<p>" + current_time(); 
     ret += make_table(r); 
     ret += "\n</body></html>"; 
@@ -317,7 +317,7 @@ int main(int nargs, char ** args)
       return std::string("exec failed ") + std::to_string(PQresultStatus(r)) + std::string(": ") + std::string(PQresultErrorMessage(r)) + std::string("\n") + std::string(PQerrorMessage(db)); 
     }
 
-    std::string ret = (boost::format("<html>\n<head>\n<title>LORA</title></head><body><h1>LORA STATS</h1><p><a href='%1/'>[back]</a>\n<hr>\n") % prefix).str(); 
+    std::string ret = (boost::format("<html>\n<head>\n<title>LORA</title></head><body><h1>LORA STATS</h1><p><a href='%1%/'>[back]</a>\n<hr>\n") % prefix).str(); 
     ret += "<p>" + current_time(); 
     ret += make_table(r); 
     ret += "\n</body></html>"; 
@@ -335,7 +335,7 @@ int main(int nargs, char ** args)
       return std::string("exec failed ") + std::to_string(PQresultStatus(r)) + std::string(": ") + std::string(PQresultErrorMessage(r)) + std::string("\n") + std::string(PQerrorMessage(db)); 
     }
 
-    std::string ret = (boost::format("<html>\n<head>\n<title>REPORT</title></head><body><h1>STATION REPORTS</h1><p><a href='%1/'>[back]</a>\n<hr>\n") % prefix).str(); 
+    std::string ret = (boost::format("<html>\n<head>\n<title>REPORT</title></head><body><h1>STATION REPORTS</h1><p><a href='%1%/'>[back]</a>\n<hr>\n") % prefix).str(); 
     ret += "<p>" + current_time(); 
     ret += make_table(r); 
     ret += "\n</body></html>"; 
@@ -361,7 +361,7 @@ int main(int nargs, char ** args)
     ret += std::to_string(station); 
     ret +=" </title></head><body><h1> STATION ";
     ret += std::to_string(station) + " (" + get_name(station) + ", DAQBox " + std::to_string(get_daqbox_from_station(station)) + ")"; 
-    ret += (boost::format("</h1><p><a href='%1/'>[back]</a>\n<hr>\n") % prefix).str(); 
+    ret += (boost::format("</h1><p><a href='%1%/'>[back]</a>\n<hr>\n") % prefix).str(); 
     ret += "<p>" + current_time(); 
     ret += make_table(r); 
     ret += "\n</body></html>"; 
