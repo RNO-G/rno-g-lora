@@ -5,13 +5,17 @@
 #include <endian.h> 
 #include "rno-g-lora-common.h"
 #include <ctime> 
+#include <boost/tokenizer.hpp> 
+#include <boost/format.hpp>
 
 
 
+std::vector<int> stations; 
 
-int stations[] = ENABLED_STATIONS; 
-int n_stations = sizeof(stations)/sizeof(*stations); 
-int daqboxes[] = ENABLED_DAQBOXES; 
+int port = 1777; 
+std::string prefix = ""; 
+std::string grafana_link = ""; 
+std::string conn_info = DEFAULT_PG_CONN_INFO; 
 
 
 std::string current_time(time_t *when = 0) 
@@ -61,11 +65,107 @@ std::string make_table(PGresult * r)
 
 PGconn * db = 0;
 
+
+int parse(int nargs, char ** args) 
+{
+  for (int i = 1; i < nargs; i++) 
+  {
+    if ( (!strcmp(args[i],"-p") || !strcmp(args[i],"--port")) && i < nargs-1)
+    {
+      int maybe_port = atoi(args[++i]); 
+      if (maybe_port) 
+      {
+        port = maybe_port; 
+      }
+      else
+      {
+        return -1;
+      }
+    }
+
+    else if ((!strcmp(args[i],"-P") || !strcmp(args[i],"--prefix")) && i < nargs-1)
+    {
+      prefix = args[++i]; 
+    }
+
+    else if ( (!strcmp(args[i],"-s") || !strcmp(args[i],"--station")) && i < nargs-1)
+    {
+      int maybe_a_station = atoi(args[++i]);
+      if (maybe_a_station)
+        stations.push_back(maybe_a_station); 
+      else 
+        return -1; 
+    }
+
+    else if ( (!strcmp(args[i],"-S") || !strcmp(args[i],"--stations")) && i < nargs -1)
+    {
+      std::string s = args[++i]; 
+      boost::tokenizer<boost::char_separator<char>> tok{s,boost::char_separator<char>(",")}; 
+
+      for (const auto & t : tok)
+      {
+        int maybe_a_station = atoi(t.c_str()); 
+
+        if (maybe_a_station) 
+        {
+          stations.push_back(maybe_a_station); 
+        }
+        else 
+          return -1; 
+      }
+    }
+    else if ( (!strcmp(args[i],"-G") || !strcmp(args[i],"--grafana")) && i < nargs -1) 
+    {
+      grafana_link = args[++i]; 
+    }
+    else if ( (!strcmp(args[i],"-c") || !strcmp(args[i],"--credentials")) && i < nargs -1) 
+    {
+      conn_info = args[++i]; 
+    }
+
+  }
+  return 0; 
+}
+
+void usage() 
+{
+  std::cout << " rno-g-lora-web [opts] " << std::endl; 
+  std::cout << "    -h/--help    show this " << std::endl; 
+  std::cout << "    -p/--port N  listening port (default 1777)" << std::endl; 
+  std::cout << "    -P/--prefix serving prefix, if using an alias" << std::endl; 
+  std::cout << "    -s/--station station_number  add station to station list, may be called multiple times" << std::endl; 
+  std::cout << "    -S/--stations station_number1,station_number2,...  add stations to station list, may be called multiple times" << std::endl; 
+  std::cout << "    -G/--grafana link to grafana (default is gethostbyname():3000)" << std::endl; 
+  std::cout << "    -c/--credentials pg_conn_info" << std::endl; 
+}
+
 int main(int nargs, char ** args) 
 {
+
+  if (parse(nargs,args))
+  {
+    usage(); 
+    return 1; 
+  }
+
+  if (!stations.size())
+  {
+    //add defaults...
+    stations.push_back(21); 
+    stations.push_back(11); 
+    stations.push_back(22); 
+    stations.push_back(12); 
+  }
+
+
+  std::cout << "Using stations"; 
+  for (auto s : stations) 
+    std::cout << s;
+  std::cout << std::endl; 
+
   crow::SimpleApp app; 
 
-  db = PQconnectdb(pg_conn_info);  
+  db = PQconnectdb(conn_info.c_str());  
 
   if (PQstatus(db) != CONNECTION_OK) 
   {
@@ -133,15 +233,25 @@ int main(int nargs, char ** args)
 
   CROW_ROUTE(app,"/")( []()
   {
-    char hostname[512]; 
-    gethostname(hostname,511); 
-    std::string ret =  "<html><head><title>LORA</title></head><body><h1>LORA Monitoring</h1><p>See also <a href='https://192.168.99.50:3000'>grafana</a>.<p> <a href='/report'>All Station Reports</a> | <a href='/lte'>All LTE Stats </a> | <a href='/lora'>All LORA Stats</a> <hr>\n"; 
+
+    std::string grafana = grafana_link; 
+    if (grafana=="") 
+    {
+      char hostname[80]; 
+      gethostname(hostname,79); 
+      grafana = "https://"; 
+      grafana+=hostname; 
+      grafana+=":3000"; 
+    }
+
+
+    std::string ret =  (boost::format("<html><head><title>LORA</title></head><body><h1>LORA Monitoring</h1><p>See also <a href='%1%'>grafana</a>.<p> <a href='%2%/report'>All Station Reports</a> | <a href='%2/lte'>All LTE Stats </a> | <a href='%2%/lora'>All LORA Stats</a> <hr>\n") % grafana_link % prefix ).str(); 
     ret+="<table border=1><tr><td>By Station:</td> \n";
-    std::vector<int> last_heard(n_stations); 
+    std::vector<int> last_heard(stations.size()); 
     int istation = 0;
     for (int station : stations) 
     {
-      ret += "<td> <a href='/station/" + std::to_string(station)+"'>" + std::to_string(station) + "</a> </td>\n"; 
+      ret += (boost::format("<td> <a href='%1/station/") % prefix).str()  + std::to_string(station)+"'>" + std::to_string(station) + "</a> </td>\n"; 
       int station_for_db = htonl(station); 
       const char * dbvals[1]; 
       dbvals[0] = (const char*) &station_for_db; 
@@ -174,15 +284,8 @@ int main(int nargs, char ** args)
     {
       ret += "<td> " + std::to_string(last) + " s</td>\n"; 
     }
-
     ret += "</tr></table><p>\n"; 
-    ret +="<table border=1><tr><td> By DAQBox: </td> \n"; 
-    for (int daqbox : daqboxes) 
-    {
-     ret += "<td> <a href='/station/" + std::to_string(get_station_from_daqbox(daqbox))+"'>" + std::to_string(daqbox) + "</a> </td>\n"; 
-    }
-
-    ret += "</tr></table><p><a href='https://github.com/rno-g/rno-g-lora'>you can help make this less crappy</a></body></html>"; 
+    ret += "<p><a href='https://github.com/rno-g/rno-g-lora'>you can help make this less crappy</a></body></html>"; 
     return ret; 
   }); 
 
@@ -194,7 +297,7 @@ int main(int nargs, char ** args)
       return std::string("exec failed ") + std::to_string(PQresultStatus(r)) + std::string(": ") + std::string(PQresultErrorMessage(r)) + std::string("\n") + std::string(PQerrorMessage(db)); 
     }
 
-    std::string ret = "<html>\n<head>\n<title>LTE</title></head><body><h1>LTE STATS</h1><p><a href='/'>[back]</a>\n<hr>\n"; 
+    std::string ret = (boost::format("<html>\n<head>\n<title>LTE</title></head><body><h1>LTE STATS</h1><p><a href='%1/'>[back]</a>\n<hr>\n") % prefix).str();  
     ret += "<p>" + current_time(); 
     ret += make_table(r); 
     ret += "\n</body></html>"; 
@@ -210,7 +313,7 @@ int main(int nargs, char ** args)
       return std::string("exec failed ") + std::to_string(PQresultStatus(r)) + std::string(": ") + std::string(PQresultErrorMessage(r)) + std::string("\n") + std::string(PQerrorMessage(db)); 
     }
 
-    std::string ret = "<html>\n<head>\n<title>LORA</title></head><body><h1>LORA STATS</h1><p><a href='/'>[back]</a>\n<hr>\n"; 
+    std::string ret = (boost::format("<html>\n<head>\n<title>LORA</title></head><body><h1>LORA STATS</h1><p><a href='%1/'>[back]</a>\n<hr>\n") % prefix).str(); 
     ret += "<p>" + current_time(); 
     ret += make_table(r); 
     ret += "\n</body></html>"; 
@@ -228,7 +331,7 @@ int main(int nargs, char ** args)
       return std::string("exec failed ") + std::to_string(PQresultStatus(r)) + std::string(": ") + std::string(PQresultErrorMessage(r)) + std::string("\n") + std::string(PQerrorMessage(db)); 
     }
 
-    std::string ret = "<html>\n<head>\n<title>REPORT</title></head><body><h1>STATION REPORTS</h1><p><a href='/'>[back]</a>\n<hr>\n"; 
+    std::string ret = (boost::format("<html>\n<head>\n<title>REPORT</title></head><body><h1>STATION REPORTS</h1><p><a href='%1/'>[back]</a>\n<hr>\n") % prefix).str(); 
     ret += "<p>" + current_time(); 
     ret += make_table(r); 
     ret += "\n</body></html>"; 
@@ -254,7 +357,7 @@ int main(int nargs, char ** args)
     ret += std::to_string(station); 
     ret +=" </title></head><body><h1> STATION ";
     ret += std::to_string(station) + " (" + get_name(station) + ", DAQBox " + std::to_string(get_daqbox_from_station(station)) + ")"; 
-    ret += "</h1><p><a href='/'>[back]</a>\n<hr>\n"; 
+    ret += (boost::format("</h1><p><a href='%1/'>[back]</a>\n<hr>\n") % prefix).str(); 
     ret += "<p>" + current_time(); 
     ret += make_table(r); 
     ret += "\n</body></html>"; 
@@ -263,7 +366,7 @@ int main(int nargs, char ** args)
   }); 
 
 
-  app.port(1777).run(); 
+  app.port(port).run(); 
 
   PQfinish(db); 
 
