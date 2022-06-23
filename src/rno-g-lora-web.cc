@@ -155,10 +155,12 @@ int main(int nargs, char ** args)
   if (!stations.size())
   {
     //add defaults...
-    stations.push_back(21); 
     stations.push_back(11); 
-    stations.push_back(22); 
     stations.push_back(12); 
+    stations.push_back(13); 
+    stations.push_back(21); 
+    stations.push_back(22); 
+    stations.push_back(23); 
   }
 
 
