@@ -9,7 +9,7 @@ inline int get_station_from_daqbox(int box)
   switch(box) 
   {
     case 1: 
-      return 25; 
+      return 23; 
     case 2: 
       return 13; 
     case 3: 
@@ -53,7 +53,7 @@ inline int get_daqbox_from_station(int station)
     case 22: 
       return 7;
     case 23: 
-      return 5; 
+      return 1; 
     case 24: 
       return 3; 
     case 25: 
