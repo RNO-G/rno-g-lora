@@ -15,9 +15,9 @@ inline int get_station_from_daqbox(int box)
     case 3: 
       return 24;
     case 4: 
-      return 15;
+      return 14;
     case 5: 
-      return 23;
+      return 25;
     case 6: 
       return 21; 
     case 7: 
@@ -27,7 +27,7 @@ inline int get_station_from_daqbox(int box)
     case 9: 
       return 12; 
     case 10:
-      return 14; 
+      return 15; 
     default: 
       return -1; 
   }
@@ -45,9 +45,9 @@ inline int get_daqbox_from_station(int station)
     case 13: 
       return 2; 
     case 14: 
-      return 10; 
-    case 15: 
       return 4; 
+    case 15: 
+      return 10; 
     case 21: 
       return 6; 
     case 22: 
@@ -57,7 +57,7 @@ inline int get_daqbox_from_station(int station)
     case 24: 
       return 3; 
     case 25: 
-      return 1; 
+      return 5; 
     default: 
       return 0; 
   }
