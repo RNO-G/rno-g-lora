@@ -252,6 +252,15 @@ void message_received(mosquitto * , void * , const mosquitto_message *msg)
       memcpy(&bytes[0], &report, sizeof(report)); 
       string_fmt(json_as_str, RNO_G_REPORT_V2_JSON_FMT, RNO_G_REPORT_V2_JSON_VALS((&report))); 
     }
+    else if (port == RNO_G_MSG_REPORT_V3)
+    {
+      rno_g_report_v3_t report; 
+      boost::beast::detail::base64::decode(&report, msg_b64.c_str(), msg_b64.size()); 
+      bytes.resize(sizeof(report)); 
+      memcpy(&bytes[0], &report, sizeof(report)); 
+      string_fmt(json_as_str, RNO_G_REPORT_V3_JSON_FMT, RNO_G_REPORT_V3_JSON_VALS((&report))); 
+    }
+
 
 
    if (verbose) 
