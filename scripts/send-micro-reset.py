@@ -16,7 +16,7 @@ import sys
 infile = "/dev/stdin"  
 
 if len(sys.argv) < 2: 
-    print("./send_micro-rset.py device [boot=0]"
+    print("./send_micro-rset.py device [boot=0]")
     sys.exit(1) 
 
 
