@@ -25,7 +25,7 @@ devstring = PREFIX + (FORMAT % (device))
 
 
 boot = int (sys.argv[2]) if len(sys.argv) > 2 else 0
-payload = base64.b64encode(bytes[0,boot]).decode()
+payload = base64.b64encode(bytes([0,boot])).decode()
 
 msg = (
     "{" 
