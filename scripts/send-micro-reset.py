@@ -4,6 +4,7 @@
 APPLICATION_ID=2
 PREFIX="c01daf" 
 FORMAT="%010x" 
+CONFIRMED="false"
 PORT=9
 
 import paho.mqtt.publish as pub 
